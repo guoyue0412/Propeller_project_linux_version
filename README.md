@@ -1,6 +1,6 @@
-# Propeller Simulation via QBlade DLL Interface
+# Propeller Simulation via QBlade SO Interface
 
-This repository contains a Python-based simulation pipeline for evaluating propeller aerodynamic performance using [QBlade 2.0.6.4](https://qblade.org/). It supports batch simulations across different **RPM**, **wind speed**, and **inflow angle** conditions, and allows for **parametric geometry modification** based on control points or direct section data.
+This repository contains a Python-based simulation pipeline for evaluating propeller aerodynamic performance using [QBlade 2.0.8.6](https://qblade.org/). It supports batch simulations across different **RPM**, **wind speed**, and **inflow angle** conditions, and allows for **parametric geometry modification** based on control points or direct section data.
 
 Plot functions are needed to visualize the results.
 
@@ -30,8 +30,8 @@ Each simulation returns a `pandas.DataFrame` containing detailed time-series and
 | `Thrust`      | N        | Instantaneous axial force (the last 120 steps)|
 | `Power`       | kW       | Instantaneous aerodynamic power (the last 120 steps)|
 | `Torque`      | Nm       | Instantaneous torque (the last 120 steps)|
-| `Thrust_y`    | N        | Instantaneous force in hub Y direction (the last 120 steps)|
-| `Thrust_z`    | N        | Instantaneous force in hub Z direction (the last 120 steps)|
+| `Thrust_y`    | N        | Instantaneous force in hub Y_g direction (the last 120 steps)|
+| `Thrust_z`    | N        | Instantaneous force in hub Z_g direction (the last 120 steps)|
 | `RPM`         | rpm      | Rotational speed of the propeller |
 | `WIND_SPEED`  | m/s      | Inflow wind speed |
 | `ANGLE`       | degrees  | Inflow angle relative to X-axis |
@@ -145,16 +145,15 @@ propeller_simulation/
 ├── Qblade_data/                   # Input files for QBlade DLL interface
 │   ├── QBlade_bld/                # .bld geometry files
 │   ├── QBlade_sim/                # .sim simulation parameter templates
-│   ├── QBR_file/                  # QBlade project files (.qpr/.qbr)
-│   └── QBladeCE_2.0.6.dll         # DLL interface (not included in repo)
+│   └── QBR_file/                  # QBlade project files (.qpr/.qbr)
 ```
 
 ---
 
 ## ⚠️ Notes
 
-- The QBlade DLL version used is **2.0.6.4**
-- The `.dll` file is **not included** due to licensing; please download it manually from the [QBlade official site](https://qblade.org/)
+- The QBlade DLL version used is **2.0.8.6**
+- The `.so` file is **included** in the software folder. if you want to download the newest to licensing; please download it manually from the [QBlade official site](https://qblade.org/)
 - The code is under continuous development — bug reports and suggestions are welcome!
 
 ---
