@@ -1,0 +1,39 @@
+----------------------------------------QBlade Blade Definition File------------------------------------------------
+Generated with : QBlade CE v 2.0.6.4_beta windows
+Archive Format: 310013
+Time : 16:22:01
+Date : 03.03.2025
+
+----------------------------------------Object Name-----------------------------------------------------------------
+Baseline_Blade                           OBJECTNAME         - the name of the blade object
+
+----------------------------------------Parameters------------------------------------------------------------------
+HAWT                                     ROTORTYPE          - the rotor type
+1                                        INVERTEDFOILS      - invert the airfoils? 0 - NO, 1 - YES (only VAWT)
+2                                        NUMBLADES          - number of blades
+
+----------------------------------------Blade Data------------------------------------------------------------------
+POS [m]             CHORD [m]           TWIST [deg]         OFFSET_X [m]        OFFSET_Y [m]        TAXIS [-]           POLAR_FILE          
+0.02013             55.09355            0.02313             0.00000             0.00000             0.50                E63__(4.25%)_MultiRePolar.plr                                                                                                               
+0.02521             49.67904            0.02421             0.00000             0.00000             0.50                Interpolated0.25_MultiRePolar.plr                                                                                                           
+0.03156             43.68904            0.02507             0.00000             0.00000             0.50                Interpolated0.25_MultiRePolar.plr                                                                                                           
+0.03791             38.50440            0.02543             0.00000             0.00000             0.50                Interpolated0.25_MultiRePolar.plr                                                                                                           
+0.04426             34.05386            0.02534             0.00000             0.00000             0.50                Interpolated0.5_MultiRePolar.plr                                                                                                            
+0.05061             30.26867            0.02486             0.00000             0.00000             0.50                Interpolated0.5_MultiRePolar.plr                                                                                                            
+0.05696             27.08010            0.02402             0.00000             0.00000             0.50                Interpolated0.5_MultiRePolar.plr                                                                                                            
+0.06331             24.41940            0.02289             0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr                                                                                                           
+0.06966             22.21783            0.02151             0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr                                                                                                           
+0.07601             20.40665            0.01993             0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr                                                                                                           
+0.08236             18.91697            0.01820             0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr                                                                                                           
+0.08871             17.67925            0.01638             0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr                                                                                                           
+0.09508             16.62506            0.01450             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.10144             15.68604            0.01263             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.10781             14.79409            0.01080             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.11418             13.87747            0.00908             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.11738             13.38742            0.00827             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.12059             12.86312            0.00751             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.12382             12.29398            0.00679             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.12550             11.97794            0.00644             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.12625             11.83234            0.00629             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+0.12700             11.68363            0.00614             0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr                                                                                                                  
+

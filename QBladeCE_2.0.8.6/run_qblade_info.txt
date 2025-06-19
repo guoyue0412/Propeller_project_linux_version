@@ -1,0 +1,13 @@
+Running The Compiled Code on a fresh Unix System (tested on ubuntu 20.4 64bit)
+
+1.	install some libraries that are required to run qblade
+	sudo apt-get update -y
+	sudo apt-get install -y libqt5opengl5 libqt5xml5 libquadmath0
+
+2. 	start qblade by executing the shell script "./run_qblade.sh" 
+
+	should the script not be executable run "chmod +x run_qblade.sh" and try again
+	
+3. 	start QBlades python sample script by executing the shell script "./run_pythonInterface.sh" 
+
+	should the script not be executable run "chmod +x run_pythonInterface.sh" and try again
