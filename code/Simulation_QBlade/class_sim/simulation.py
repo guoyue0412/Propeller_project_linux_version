@@ -11,6 +11,7 @@ import pandas as pd
 from scipy.interpolate import BSpline
 import ctypes
 import pickle
+from tqdm import tqdm
 
 from typing import Optional,Union,List,Dict # for | Optional
 
@@ -284,7 +285,7 @@ class SIMULATION:
                 try:
                     with open(output_file, 'w') as file:
                         file.writelines(modified_lines)
-                    print(f"File saved successfully to {output_file}")
+                    # print(f"File saved successfully to {output_file}")
                 except Exception as e:
                     print(f"Error saving file: {e}")
             except FileNotFoundError:
@@ -293,13 +294,13 @@ class SIMULATION:
 
             
         # Load and run simulation using QBlade DLL(Windows)/SO(Linux)
-        QBLIB = QBladeLibrary(self.file_path["dll_file"])  # type: ignore
-        QBLIB.createInstance(self.device, 32)
+        QBLADE = QBladeLibrary(self.file_path["dll_file"])  # type: ignore
+        QBLADE.createInstance(self.device, 32)
         path: str = SIM_file_path if SIM_file_path is not None else self.file_path['base_sim']
         path_b = path.encode()
-        QBLIB.loadSimDefinition(path_b)
-        QBLIB.loadProject(self.str_to_byte(self.file_path["QBR_file"]))
-        QBLIB.initializeSimulation()
+        QBLADE.loadSimDefinition(path_b)
+        # QBLADE.loadProject(self.str_to_byte(self.file_path["QBR_file"]))
+        QBLADE.initializeSimulation()
         
 
         number_of_timesteps: int = self.number_of_timesteps
@@ -308,15 +309,16 @@ class SIMULATION:
 
         data_num: int = number_of_timesteps - 120
 
-        for i in range(number_of_timesteps):
-            QBLIB.advanceTurbineSimulation()
+        # process display
+        for i in tqdm(range(number_of_timesteps), desc="Simulating Propeller", unit="step", ncols=100):
+            QBLADE.advanceTurbineSimulation()
             if i >= data_num:
-                data_values["Time"].append(float(QBLIB.getCustomData_at_num(b"Time [s]", 0, 0)))
-                data_values["Thrust"].append(float(QBLIB.getCustomData_at_num(b"Aerodynamic Thrust [N]", 0, 0)))
-                data_values["Power"].append(float(QBLIB.getCustomData_at_num(b"Aerodynamic Power [W]", 0, 0)))
-                data_values["Torque"].append(float(QBLIB.getCustomData_at_num(b"Aerodynamic Torque [Nm]", 0, 0)))
-                data_values["Thrust_y"].append(float(QBLIB.getCustomData_at_num(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
-                data_values["Thrust_z"].append(float(QBLIB.getCustomData_at_num(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
+                data_values["Time"].append(float(QBLADE.getCustomData_at_num(b"Time [s]", 0, 0)))
+                data_values["Thrust"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Thrust [N]", 0, 0)))
+                data_values["Power"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Power [W]", 0, 0)))
+                data_values["Torque"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Torque [Nm]", 0, 0)))
+                data_values["Thrust_y"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
+                data_values["Thrust_z"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
 
         # Convert results to DataFrame
         df: pd.DataFrame = pd.DataFrame(data_values)
@@ -353,15 +355,20 @@ class SIMULATION:
             df["eta"] = 0
 
         self.one_simulation_data = df
-        self.all_simulation_data[os.path.splitext(path)[0]] = df
+        filename = os.path.splitext(path)[0]
+        label = os.path.splitext(os.path.basename(filename))[0]
+        self.all_simulation_data[label] = df
 
         # Store QBlade project
         goal_qbr_file_name: str = os.path.splitext(path)[0] + ".qpr"
         goal_qbr_file_path: str = os.path.join(self.file_path["QBR_file_folder"], goal_qbr_file_name)
-        QBLIB.storeProject(self.str_to_byte(goal_qbr_file_path))
+        QBLADE.storeProject(self.str_to_byte(goal_qbr_file_path))
 
-        QBLIB.closeInstance()
-        del QBLIB.lib
+        # Unloading the qblade library
+        QBLADE.closeInstance()
+        print(f'RPM{RPM}_Wind{WIND_SPEED}_Angle{ANGLE}')
+        del QBLADE
+
         return self.one_simulation_data # one_simulation data detailed for README.md
 
 
@@ -415,8 +422,8 @@ class SIMULATION:
 
         # Reconstruct geometry from control points using B-spline interpolation
         if control_point is not None:
-            chord_points: np.ndarray = control_point[4:]
-            twist_points: np.ndarray = control_point[0:4]
+            chord_points: np.ndarray = control_point[0:4]
+            twist_points: np.ndarray = control_point[4:]
 
             degree: int = 3
             knots: np.ndarray = np.concatenate(([0] * degree, [0.3984874, 0.89904882], [1] * degree))
@@ -458,6 +465,7 @@ class SIMULATION:
                             break
                     if modified:
                         new_line = f"{float(pos_col):<{pos_width}.5f} {float(chord_col):<{chord_width}.5f} {float(twist_col):<{twist_width}.5f} {remaining:<{remaining_width}}\n"
+                        # print(new_line)
                         modified_lines.append(new_line)
                     else:
                         modified_lines.append(line)
@@ -471,7 +479,7 @@ class SIMULATION:
         try:
             with open(self.file_path["bld_file_path"], 'w') as file:
                 file.writelines(modified_lines)
-            print(f"File saved successfully to {repr(self.file_path['bld_file_path'])}")
+            # print(f"File saved successfully to {repr(self.file_path['bld_file_path'])}")
         except Exception as e:
             print(f"Error saving file: {e}")
 
