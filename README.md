@@ -147,7 +147,7 @@ propeller_simulation/
 │   ├── QBlade_bld/                # .bld geometry files
 │   ├── QBlade_sim/                # .sim simulation parameter templates
 │   ├── QBR_file/                  # QBlade project files (.qpr/.qbr)
-│   └── QBladeCE_2.0.6.dll         # DLL interface (not included in repo)
+│   └── libQBladeCE_2.0.8.6.so.1.0.0         # So interface (not included in repo)
 ```
 
 ---
@@ -155,7 +155,7 @@ propeller_simulation/
 ## ⚠️ Notes
 
 - The QBlade DLL version used is **2.0.6.4**
-- The `.dll` file is **not included** due to licensing; please download it manually from the [QBlade official site](https://qblade.org/)
+- The `.so` file is **not included** due to licensing; please download it manually from the [QBlade official site](https://qblade.org/)
 - The code is under continuous development — bug reports and suggestions are welcome!
 
 ---
