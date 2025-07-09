@@ -1,6 +1,6 @@
 # Propeller Simulation via QBlade DLL Interface
 
-This repository contains a Python-based simulation pipeline for evaluating propeller aerodynamic performance using [QBlade 2.0.6.4](https://qblade.org/). It supports batch simulations across different **RPM**, **wind speed**, and **inflow angle** conditions, and allows for **parametric geometry modification** based on control points or direct section data.
+This repository contains a Python-based simulation pipeline for evaluating propeller aerodynamic performance using [QBlade 2.0.8.6](https://qblade.org/). It supports batch simulations across different **RPM**, **wind speed**, and **inflow angle** conditions, and allows for **parametric geometry modification** based on control points or direct section data.
 
 Plot functions are needed to visualize the results.
 
