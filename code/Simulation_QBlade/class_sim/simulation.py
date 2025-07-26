@@ -350,7 +350,7 @@ class SIMULATION:
         df["Cp"] = df["POWER"] / (self.airDensity * ((df["RPM"] / 60) ** 3) * ((2 * self.R) ** 5))
 
         if df["WIND_SPEED"].iloc[0] != 0:
-            df["eta"] = (df["WIND_SPEED"] / ((df["RPM"] / 60) * 2 * self.R)) * (df["Cp"] / df["Ct"])
+            df["eta"] = (df["WIND_SPEED"] / ((df["RPM"] / 60) * 2 * self.R)) * (df["Ct"] / df["Cp"])
         else:
             df["eta"] = 0
 
