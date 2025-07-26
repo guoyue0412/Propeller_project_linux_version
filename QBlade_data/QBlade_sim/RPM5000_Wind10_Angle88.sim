@@ -1,8 +1,8 @@
 ----------------------------------------QBlade Simulation Definition File------------------------------------------
 Generated with : QBlade CE v 2.0.6.4_beta windows
 Archive Format: 310013
-Time : 17:34:15
-Date : 26.02.2025
+Time : 13:18:59
+Date : 26.07.2025
 
 ----------------------------------------Object Name-----------------------------------------------------------------
 RPM5000_Wind10_Angle88                   OBJECTNAME         - the name of the simulation object               
@@ -14,8 +14,8 @@ RPM5000_Wind10_Angle88                   OBJECTNAME         - the name of the si
 multiple turbines can be added by adding multiple definitions encapsulated with TURB_X and END_TURB_X, where X must start at 1
 
 TURB_1
-    Baseline_Blade_Turb/Baseline_Blade_Turb.trb TURBFILE           - the turbine definition file that is used for this simulation
-    Baseline_Blade_Turb                  TURBNAME           - the (unique) name of the turbine in the simulation (results will appear under this name)
+    base_Turb/base_Turb.trb              TURBFILE           - the turbine definition file that is used for this simulation
+    base_Turb                            TURBNAME           - the (unique) name of the turbine in the simulation (results will appear under this name)
     0.00                                 INITIAL_YAW        - the initial turbine yaw in [deg]
     0.00                                 INITIAL_PITCH      - the initial collective blade pitch in [deg]
     0.00                                 INITIAL_AZIMUTH    - the initial azimuthal rotor angle in [deg]
@@ -38,8 +38,8 @@ TURB_1
 END_TURB_1
 
 ----------------------------------------Simulation Settings-------------------------------------------------------
-0.000083                                 TIMESTEP           - the timestep size in [s]
-999                                      NUMTIMESTEPS       - the number of timesteps
+0.000125                                 TIMESTEP           - the timestep size in [s]
+1000                                     NUMTIMESTEPS       - the number of timesteps
 20.000                                   RAMPUP             - the rampup time for the structural model
 0.000                                    ADDDAMP            - the initial time with additional damping
 100.000                                  ADDDAMPFACTOR      - for the additional damping time this factor is used to increase the damping of all components
