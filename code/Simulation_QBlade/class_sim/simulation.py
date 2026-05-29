@@ -309,9 +309,17 @@ class SIMULATION:
 
         data_num: int = number_of_timesteps - 120
 
-        # process display
+        # 数据有效性兜底：advanceTurbineSimulation 返回 False 表示 QBlade
+        # 内部发散（典型为 "NaN values occured during wake calculations! Aborting..."），
+        # 此后继续 getCustomData 会拿到 0 / NaN，污染训练集。
+        # 参考 SIL sampleScript：发散立即 break，并把本工况标记为无效。
+        sim_aborted_at: int = -1  # >=0 表示在该 step 发散
         for i in tqdm(range(number_of_timesteps), desc="Simulating Propeller", unit="step", ncols=100):
-            QBLADE.advanceTurbineSimulation()
+            success = QBLADE.advanceTurbineSimulation()
+            if not success:
+                sim_aborted_at = i
+                print(f"\n[ABORT] 仿真在 step {i} 发散（NaN 或 inf），停止本工况并标记无效")
+                break
             if i >= data_num:
                 data_values["Time"].append(float(QBLADE.getCustomData_at_num(b"Time [s]", 0, 0)))
                 data_values["Thrust"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Thrust [N]", 0, 0)))
@@ -319,6 +327,16 @@ class SIMULATION:
                 data_values["Torque"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Torque [Nm]", 0, 0)))
                 data_values["Thrust_y"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
                 data_values["Thrust_z"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
+
+        # 仿真发散时：直接抛弃本工况，不写入 all_simulation_data，
+        # 避免半截无效数据混入训练集。上层 run_all_simulation 据此跳过即可。
+        if sim_aborted_at >= 0 or len(data_values["Time"]) == 0:
+            QBLADE.closeInstance()
+            del QBLADE
+            label_for_log = os.path.splitext(os.path.basename(path))[0]
+            print(f"[SKIP] 工况 {label_for_log} 因发散未保存（abort step={sim_aborted_at}, 收集步数={len(data_values['Time'])}）")
+            self.one_simulation_data = pd.DataFrame()
+            return self.one_simulation_data
 
         # Convert results to DataFrame
         df: pd.DataFrame = pd.DataFrame(data_values)
@@ -353,6 +371,13 @@ class SIMULATION:
             df["eta"] = (df["WIND_SPEED"] / (df["RPM"] * 2 * self.R)) * (df["Ct"] / df["Cp"])
         else:
             df["eta"] = 0
+
+        # 兜底校验：聚合后量级仍异常（NaN/inf/接近 0 推力）→ 拒收
+        if not np.isfinite(df["THRUST"].iloc[0]) or abs(df["THRUST"].iloc[0]) < 1e-6:
+            QBLADE.closeInstance(); del QBLADE
+            print(f"[SKIP] 工况 {os.path.splitext(os.path.basename(path))[0]} THRUST 异常（{df['THRUST'].iloc[0]:.3e}），不保存")
+            self.one_simulation_data = pd.DataFrame()
+            return self.one_simulation_data
 
         self.one_simulation_data = df
         filename = os.path.splitext(path)[0]

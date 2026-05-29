@@ -1,0 +1,35 @@
+----------------------------------------QBlade Blade Definition File------------------------------------------------
+Generated with : QBlade CE v 2.0.6.4_beta windows
+Archive Format: 310013
+Time : 13:18:59
+Date : 26.07.2025
+
+----------------------------------------Object Name-----------------------------------------------------------------
+New_Blade                                OBJECTNAME         - the name of the blade object
+
+----------------------------------------Parameters------------------------------------------------------------------
+HAWT                                     ROTORTYPE          - the rotor type
+1                                        INVERTEDFOILS      - invert the airfoils? 0 - NO, 1 - YES (only VAWT)
+2                                        NUMBLADES          - number of blades
+
+----------------------------------------Blade Data------------------------------------------------------------------
+POS [m]             CHORD [m]           TWIST [deg]         OFFSET_X [m]        OFFSET_Y [m]        TAXIS [-]           POLAR_FILE          
+0.01905             0.01753             37.86               0.00000             0.00000             0.50                E63__(4.25%)_MultiRePolar.plr
+0.02540             0.01956             45.82               0.00000             0.00000             0.50                Interpolated0.25_MultiRePolar.plr
+0.03175             0.02223             44.19               0.00000             0.00000             0.50                Interpolated0.25_MultiRePolar.plr
+0.03810             0.02413             38.35               0.00000             0.00000             0.50                Interpolated0.25_MultiRePolar.plr
+0.04445             0.02515             33.64               0.00000             0.00000             0.50                Interpolated0.5_MultiRePolar.plr
+0.05080             0.02565             29.90               0.00000             0.00000             0.50                Interpolated0.5_MultiRePolar.plr
+0.05715             0.02540             27.02               0.00000             0.00000             0.50                Interpolated0.5_MultiRePolar.plr
+0.06350             0.02476             24.67               0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr
+0.06985             0.02362             22.62               0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr
+0.07620             0.02210             20.88               0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr
+0.08255             0.02045             19.36               0.00000             0.00000             0.50                Interpolated0.75_MultiRePolar.plr
+0.08890             0.01842             19.98               0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr
+0.09525             0.01638             16.74               0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr
+0.10160             0.01422             15.79               0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr
+0.10795             0.01219             14.64               0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr
+0.11430             0.01029             13.86               0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr
+0.12065             0.00775             12.72               0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr
+0.12700             0.00508             11.53               0.00000             0.00000             0.50                NACA_4412_MultiRePolar.plr
+
