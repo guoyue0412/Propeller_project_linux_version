@@ -315,15 +315,14 @@ class SIMULATION:
 
         number_of_timesteps: int = self.number_of_timesteps
         # 数据采集字段（每步从 QBlade SIL 取一次）：
-        # - Thrust/Power/Torque：旋翼坐标主推力/功率/扭矩（标量）
-        # - Thrust_y/_z：Hub global frame Y/Z 方向力（兼容老数据）
-        # - Fx/Fy/Fz：Hub global frame 三轴力（Fy/Fz 与 Thrust_y/_z 数值相同，
-        #   保留命名清晰）
+        # - Thrust/Power/Torque：旋翼坐标主推力/功率/扭矩（标量，X 方向即旋转轴）
+        # - Thrust_y/_z：Hub global frame Y/Z 方向力
         # - Mx/My/Mz：Hub global frame 三轴力矩（用于配平 + 全姿态分析）
+        # 注意：QBlade SIL 不暴露 "Hub X_g Direction Force"，X 方向力 ≡ Aerodynamic Thrust。
+        # post-process 阶段 FX = THRUST 别名（避免重复 ctypes 调用）。
         data_keys: list[str] = [
             "Time", "Thrust", "Power", "Torque",
             "Thrust_y", "Thrust_z",
-            "Fx", "Fy", "Fz",
             "Mx", "My", "Mz",
         ]
         data_values: dict[str, list[float]] = {key: [] for key in data_keys}
@@ -342,19 +341,15 @@ class SIMULATION:
                 print(f"\n[ABORT] 仿真在 step {i} 发散（NaN 或 inf），停止本工况并标记无效")
                 break
             if i >= data_num:
-                gd = QBLADE.getCustomData_at_num  # 局部别名缩短下面 12 次调用
+                gd = QBLADE.getCustomData_at_num  # 局部别名缩短下面 9 次调用
                 data_values["Time"].append(float(gd(b"Time [s]", 0, 0)))
                 data_values["Thrust"].append(float(gd(b"Aerodynamic Thrust [N]", 0, 0)))
                 data_values["Power"].append(float(gd(b"Aerodynamic Power [W]", 0, 0)))
                 data_values["Torque"].append(float(gd(b"Aerodynamic Torque [Nm]", 0, 0)))
-                # 兼容老字段：Hub global Y/Z 方向力
+                # Hub global Y/Z 方向力（QBlade 不暴露 Hub X 方向力，X = Thrust）
                 data_values["Thrust_y"].append(float(gd(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
                 data_values["Thrust_z"].append(float(gd(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
-                # 新增：Hub global frame 三轴力
-                data_values["Fx"].append(float(gd(b"Aerodynamic Force in Hub X_g Direction [N]", 0, 0)))
-                data_values["Fy"].append(float(gd(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
-                data_values["Fz"].append(float(gd(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
-                # 新增：Hub global frame 三轴力矩
+                # Hub global frame 三轴力矩
                 data_values["Mx"].append(float(gd(b"Aerodynamic Moment in Hub X_g Direction [Nm]", 0, 0)))
                 data_values["My"].append(float(gd(b"Aerodynamic Moment in Hub Y_g Direction [Nm]", 0, 0)))
                 data_values["Mz"].append(float(gd(b"Aerodynamic Moment in Hub Z_g Direction [Nm]", 0, 0)))
@@ -394,10 +389,13 @@ class SIMULATION:
         df["TORQUE"] = df["Torque"].mean() * -1
         df["THRUST_Y"] = df["Thrust_y"].mean() * -1
         df["THRUST_Z"] = df["Thrust_z"].mean() * -1
-        # 新增聚合：三轴力 + 三轴力矩（Hub global frame）
-        df["FX"] = df["Fx"].mean() * -1
-        df["FY"] = df["Fy"].mean() * -1
-        df["FZ"] = df["Fz"].mean() * -1
+        # 三轴力 alias：
+        # FX = THRUST（旋转轴主推力，QBlade 不暴露 Hub X_g Force，所以等同 Thrust）
+        # FY/FZ 与 THRUST_Y/_Z 同源（同一 QBlade 量），保留命名清晰
+        df["FX"] = df["THRUST"]
+        df["FY"] = df["THRUST_Y"]
+        df["FZ"] = df["THRUST_Z"]
+        # 三轴力矩（Hub global frame）
         df["MX"] = df["Mx"].mean() * -1
         df["MY"] = df["My"].mean() * -1
         df["MZ"] = df["Mz"].mean() * -1
