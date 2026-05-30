@@ -413,10 +413,15 @@ class SIMULATION:
         label = os.path.splitext(os.path.basename(filename))[0]
         self.all_simulation_data[label] = df
 
-        # Store QBlade project
-        goal_qbr_file_name: str = os.path.splitext(path)[0] + ".qpr"
-        goal_qbr_file_path: str = os.path.join(self.file_path["QBR_file_folder"], goal_qbr_file_name)
-        QBLADE.storeProject(self.str_to_byte(goal_qbr_file_path))
+        # 优化 #3：跳过 storeProject 写 .qpr 项目文件。
+        # 大批量数据生成时（1000 几何 × 42 工况 = 42000 次）每次 store 13MB
+        # 项目文件 ≈ 1min IO，总累计 ~700 小时纯 IO，且训练数据全在 pkl 中，
+        # .qpr 仅 GUI 调试用途，单几何调试时可手动重启 storeProject。
+        # 参考：https://docs.qblade.org/src/user/guigraph/guigraph.html
+        # 若要恢复，取消下面 3 行的注释：
+        # goal_qbr_file_name: str = os.path.splitext(path)[0] + ".qpr"
+        # goal_qbr_file_path: str = os.path.join(self.file_path["QBR_file_folder"], goal_qbr_file_name)
+        # QBLADE.storeProject(self.str_to_byte(goal_qbr_file_path))
 
         # Unloading the qblade library
         QBLADE.closeInstance()
