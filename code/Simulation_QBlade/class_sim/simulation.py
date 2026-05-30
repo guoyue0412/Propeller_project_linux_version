@@ -304,7 +304,18 @@ class SIMULATION:
         
 
         number_of_timesteps: int = self.number_of_timesteps
-        data_keys: list[str] = ["Time", "Thrust", "Power", "Torque", "Thrust_y", "Thrust_z"]
+        # 数据采集字段（每步从 QBlade SIL 取一次）：
+        # - Thrust/Power/Torque：旋翼坐标主推力/功率/扭矩（标量）
+        # - Thrust_y/_z：Hub global frame Y/Z 方向力（兼容老数据）
+        # - Fx/Fy/Fz：Hub global frame 三轴力（Fy/Fz 与 Thrust_y/_z 数值相同，
+        #   保留命名清晰）
+        # - Mx/My/Mz：Hub global frame 三轴力矩（用于配平 + 全姿态分析）
+        data_keys: list[str] = [
+            "Time", "Thrust", "Power", "Torque",
+            "Thrust_y", "Thrust_z",
+            "Fx", "Fy", "Fz",
+            "Mx", "My", "Mz",
+        ]
         data_values: dict[str, list[float]] = {key: [] for key in data_keys}
 
         data_num: int = number_of_timesteps - 120
@@ -321,12 +332,22 @@ class SIMULATION:
                 print(f"\n[ABORT] 仿真在 step {i} 发散（NaN 或 inf），停止本工况并标记无效")
                 break
             if i >= data_num:
-                data_values["Time"].append(float(QBLADE.getCustomData_at_num(b"Time [s]", 0, 0)))
-                data_values["Thrust"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Thrust [N]", 0, 0)))
-                data_values["Power"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Power [W]", 0, 0)))
-                data_values["Torque"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Torque [Nm]", 0, 0)))
-                data_values["Thrust_y"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
-                data_values["Thrust_z"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
+                gd = QBLADE.getCustomData_at_num  # 局部别名缩短下面 12 次调用
+                data_values["Time"].append(float(gd(b"Time [s]", 0, 0)))
+                data_values["Thrust"].append(float(gd(b"Aerodynamic Thrust [N]", 0, 0)))
+                data_values["Power"].append(float(gd(b"Aerodynamic Power [W]", 0, 0)))
+                data_values["Torque"].append(float(gd(b"Aerodynamic Torque [Nm]", 0, 0)))
+                # 兼容老字段：Hub global Y/Z 方向力
+                data_values["Thrust_y"].append(float(gd(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
+                data_values["Thrust_z"].append(float(gd(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
+                # 新增：Hub global frame 三轴力
+                data_values["Fx"].append(float(gd(b"Aerodynamic Force in Hub X_g Direction [N]", 0, 0)))
+                data_values["Fy"].append(float(gd(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
+                data_values["Fz"].append(float(gd(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
+                # 新增：Hub global frame 三轴力矩
+                data_values["Mx"].append(float(gd(b"Aerodynamic Moment in Hub X_g Direction [Nm]", 0, 0)))
+                data_values["My"].append(float(gd(b"Aerodynamic Moment in Hub Y_g Direction [Nm]", 0, 0)))
+                data_values["Mz"].append(float(gd(b"Aerodynamic Moment in Hub Z_g Direction [Nm]", 0, 0)))
 
         # 仿真发散时：直接抛弃本工况，不写入 all_simulation_data，
         # 避免半截无效数据混入训练集。上层 run_all_simulation 据此跳过即可。
@@ -357,11 +378,19 @@ class SIMULATION:
             df["ANGLE"] = float(ANGLE)
 
         # Post-process simulation data
+        # × -1 是为了把 QBlade 输出的拉力定义（向下为正）翻成无人机推力（向上为正）
         df["THRUST"] = df["Thrust"].mean() * -1
         df["POWER"] = df["Power"].mean() * -1
         df["TORQUE"] = df["Torque"].mean() * -1
         df["THRUST_Y"] = df["Thrust_y"].mean() * -1
         df["THRUST_Z"] = df["Thrust_z"].mean() * -1
+        # 新增聚合：三轴力 + 三轴力矩（Hub global frame）
+        df["FX"] = df["Fx"].mean() * -1
+        df["FY"] = df["Fy"].mean() * -1
+        df["FZ"] = df["Fz"].mean() * -1
+        df["MX"] = df["Mx"].mean() * -1
+        df["MY"] = df["My"].mean() * -1
+        df["MZ"] = df["Mz"].mean() * -1
 
         df["Ct"] = df["THRUST"] / (self.airDensity * ((df["RPM"] / 60) ** 2) * ((2 * self.R) ** 4))
         # df["Cp"] = df["POWER"] * 1000 / (self.airDensity * ((df["RPM"] / 60) ** 3) * ((2 * self.R) ** 5))
