@@ -61,9 +61,9 @@ Only used if waketype = 0
 0                                        WAKELENGTHTYPE     - the wake length type (0 = counted in rotor revolutions, 1 = counted in time steps)
 1000000.00                               CONVERSIONLENGTH   - the wake conversion length (to particles) [-]
 0.50                                     NEARWAKELENGTH     - the near wake length [-]
-1.00                                     ZONE1LENGTH        - the wake zone 1 length [-]
-2.00                                     ZONE2LENGTH        - the wake zone 2 length [-]
-3.00                                     ZONE3LENGTH        - the wake zone 3 length [-]
+0.50                                     ZONE1LENGTH        - the wake zone 1 length [-]
+1.00                                     ZONE2LENGTH        - the wake zone 2 length [-]
+1.00                                     ZONE3LENGTH        - the wake zone 3 length [-]
 2                                        ZONE1FACTOR        - the wake zone 1 factor (integer!) [-]
 2                                        ZONE2FACTOR        - the wake zone 2 factor (integer!) [-]
 8                                        ZONE3FACTOR        - the wake zone 3 factor (integer!) [-]
