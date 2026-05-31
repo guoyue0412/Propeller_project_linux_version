@@ -55,18 +55,18 @@ Only used if waketype = 0
 0                                        CONVECTIONTYPE     - the wake convection type (0 = BL, 1 = HH, 2 = LOC)
 1.00                                     WAKERELAXATION     - the wake relaxation factor [0-1]
 1.00                                     FIRSTWAKEROW       - first wake row length [-]
-200000                                   MAXWAKESIZE        - the maximum number of wake elements [-]
-100                                      MAXWAKEDIST        - the maxmimum wake distance from the rotor plane (normalized by dia) [-]
+30000                                    MAXWAKESIZE        - the maximum number of wake elements [-]
+10                                       MAXWAKEDIST        - the maxmimum wake distance from the rotor plane (normalized by dia) [-]
 0.00100                                  WAKEREDUCTION      - the wake reduction factor [-]
 0                                        WAKELENGTHTYPE     - the wake length type (0 = counted in rotor revolutions, 1 = counted in time steps)
 1000000.00                               CONVERSIONLENGTH   - the wake conversion length (to particles) [-]
 0.50                                     NEARWAKELENGTH     - the near wake length [-]
-2.00                                     ZONE1LENGTH        - the wake zone 1 length [-]
-4.00                                     ZONE2LENGTH        - the wake zone 2 length [-]
-6.00                                     ZONE3LENGTH        - the wake zone 3 length [-]
+0.50                                     ZONE1LENGTH        - the wake zone 1 length [-]
+1.00                                     ZONE2LENGTH        - the wake zone 2 length [-]
+1.00                                     ZONE3LENGTH        - the wake zone 3 length [-]
 2                                        ZONE1FACTOR        - the wake zone 1 factor (integer!) [-]
 2                                        ZONE2FACTOR        - the wake zone 2 factor (integer!) [-]
-2                                        ZONE3FACTOR        - the wake zone 3 factor (integer!) [-]
+8                                        ZONE3FACTOR        - the wake zone 3 factor (integer!) [-]
 
 ----------------------------------------Vortex Core Parameters------------------------------------------------------
 Only used if waketype = 0

@@ -72,12 +72,19 @@ class SIMULATION:
         # Automatically call the sim file generation function
         self.generating_simulation_parameters_tuple(self.file_path["simulation_parameter_path"])# get the simulation parameters tuple
         self.generating_sim_file()
-        
+
         # simulation device
         if (device_type == 'GPU'):
             self.device: int = 1
         if (device_type == 'CPU'):
             self.device: int = 0
+
+        # 优化 #4：createInstance 复用
+        # 已验证 loadSimDefinition 第 N 次调用能正确重置内部 wake/state，
+        # Thrust 与独立 createInstance 误差 < 0.0001%（见 test_createinstance_reuse.py）。
+        # self.QBLADE 在 _ensure_qblade() lazy 创建，跨 run_one_simulation 复用。
+        # 每工况省 ~2s init 开销，42 工况 × 1000 几何 ≈ 23h 收益。
+        self.QBLADE = None
 
 
     # func for invaid str file_path
@@ -293,9 +300,12 @@ class SIMULATION:
                 return pd.DataFrame()  # Empty result fallback
 
             
-        # Load and run simulation using QBlade DLL(Windows)/SO(Linux)
-        QBLADE = QBladeLibrary(self.file_path["dll_file"])  # type: ignore
-        QBLADE.createInstance(self.device, 32)
+        # 优化 #4：QBlade 实例 lazy 创建并跨工况复用。
+        # 仅首工况会触发 createInstance（OpenCL device 枚举 + OpenMP 池初始化 ~4s）。
+        if self.QBLADE is None:
+            self.QBLADE = QBladeLibrary(self.file_path["dll_file"])  # type: ignore
+            self.QBLADE.createInstance(self.device, 32)
+        QBLADE = self.QBLADE
         path: str = SIM_file_path if SIM_file_path is not None else self.file_path['base_sim']
         path_b = path.encode()
         QBLADE.loadSimDefinition(path_b)
@@ -304,21 +314,55 @@ class SIMULATION:
         
 
         number_of_timesteps: int = self.number_of_timesteps
-        data_keys: list[str] = ["Time", "Thrust", "Power", "Torque", "Thrust_y", "Thrust_z"]
+        # 数据采集字段（每步从 QBlade SIL 取一次）：
+        # - Thrust/Power/Torque：旋翼坐标主推力/功率/扭矩（标量，X 方向即旋转轴）
+        # - Thrust_y/_z：Hub global frame Y/Z 方向力
+        # - Mx/My/Mz：Hub global frame 三轴力矩（用于配平 + 全姿态分析）
+        # 注意：QBlade SIL 不暴露 "Hub X_g Direction Force"，X 方向力 ≡ Aerodynamic Thrust。
+        # post-process 阶段 FX = THRUST 别名（避免重复 ctypes 调用）。
+        data_keys: list[str] = [
+            "Time", "Thrust", "Power", "Torque",
+            "Thrust_y", "Thrust_z",
+            "Mx", "My", "Mz",
+        ]
         data_values: dict[str, list[float]] = {key: [] for key in data_keys}
 
         data_num: int = number_of_timesteps - 120
 
-        # process display
+        # 数据有效性兜底：advanceTurbineSimulation 返回 False 表示 QBlade
+        # 内部发散（典型为 "NaN values occured during wake calculations! Aborting..."），
+        # 此后继续 getCustomData 会拿到 0 / NaN，污染训练集。
+        # 参考 SIL sampleScript：发散立即 break，并把本工况标记为无效。
+        sim_aborted_at: int = -1  # >=0 表示在该 step 发散
         for i in tqdm(range(number_of_timesteps), desc="Simulating Propeller", unit="step", ncols=100):
-            QBLADE.advanceTurbineSimulation()
+            success = QBLADE.advanceTurbineSimulation()
+            if not success:
+                sim_aborted_at = i
+                print(f"\n[ABORT] 仿真在 step {i} 发散（NaN 或 inf），停止本工况并标记无效")
+                break
             if i >= data_num:
-                data_values["Time"].append(float(QBLADE.getCustomData_at_num(b"Time [s]", 0, 0)))
-                data_values["Thrust"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Thrust [N]", 0, 0)))
-                data_values["Power"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Power [W]", 0, 0)))
-                data_values["Torque"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Torque [Nm]", 0, 0)))
-                data_values["Thrust_y"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
-                data_values["Thrust_z"].append(float(QBLADE.getCustomData_at_num(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
+                gd = QBLADE.getCustomData_at_num  # 局部别名缩短下面 9 次调用
+                data_values["Time"].append(float(gd(b"Time [s]", 0, 0)))
+                data_values["Thrust"].append(float(gd(b"Aerodynamic Thrust [N]", 0, 0)))
+                data_values["Power"].append(float(gd(b"Aerodynamic Power [W]", 0, 0)))
+                data_values["Torque"].append(float(gd(b"Aerodynamic Torque [Nm]", 0, 0)))
+                # Hub global Y/Z 方向力（QBlade 不暴露 Hub X 方向力，X = Thrust）
+                data_values["Thrust_y"].append(float(gd(b"Aerodynamic Force in Hub Y_g Direction [N]", 0, 0)))
+                data_values["Thrust_z"].append(float(gd(b"Aerodynamic Force in Hub Z_g Direction [N]", 0, 0)))
+                # Hub global frame 三轴力矩
+                data_values["Mx"].append(float(gd(b"Aerodynamic Moment in Hub X_g Direction [Nm]", 0, 0)))
+                data_values["My"].append(float(gd(b"Aerodynamic Moment in Hub Y_g Direction [Nm]", 0, 0)))
+                data_values["Mz"].append(float(gd(b"Aerodynamic Moment in Hub Z_g Direction [Nm]", 0, 0)))
+
+        # 仿真发散时：直接抛弃本工况，不写入 all_simulation_data，
+        # 避免半截无效数据混入训练集。上层 run_all_simulation 据此跳过即可。
+        # 注意：优化 #4 后不在此处 closeInstance，QBLADE 实例跨工况复用。
+        # loadSimDefinition 已验证能完全重置内部 wake/state（误差 < 0.0001%）。
+        if sim_aborted_at >= 0 or len(data_values["Time"]) == 0:
+            label_for_log = os.path.splitext(os.path.basename(path))[0]
+            print(f"[SKIP] 工况 {label_for_log} 因发散未保存（abort step={sim_aborted_at}, 收集步数={len(data_values['Time'])}）")
+            self.one_simulation_data = pd.DataFrame()
+            return self.one_simulation_data
 
         # Convert results to DataFrame
         df: pd.DataFrame = pd.DataFrame(data_values)
@@ -339,11 +383,22 @@ class SIMULATION:
             df["ANGLE"] = float(ANGLE)
 
         # Post-process simulation data
+        # × -1 是为了把 QBlade 输出的拉力定义（向下为正）翻成无人机推力（向上为正）
         df["THRUST"] = df["Thrust"].mean() * -1
         df["POWER"] = df["Power"].mean() * -1
         df["TORQUE"] = df["Torque"].mean() * -1
         df["THRUST_Y"] = df["Thrust_y"].mean() * -1
         df["THRUST_Z"] = df["Thrust_z"].mean() * -1
+        # 三轴力 alias：
+        # FX = THRUST（旋转轴主推力，QBlade 不暴露 Hub X_g Force，所以等同 Thrust）
+        # FY/FZ 与 THRUST_Y/_Z 同源（同一 QBlade 量），保留命名清晰
+        df["FX"] = df["THRUST"]
+        df["FY"] = df["THRUST_Y"]
+        df["FZ"] = df["THRUST_Z"]
+        # 三轴力矩（Hub global frame）
+        df["MX"] = df["Mx"].mean() * -1
+        df["MY"] = df["My"].mean() * -1
+        df["MZ"] = df["Mz"].mean() * -1
 
         df["Ct"] = df["THRUST"] / (self.airDensity * ((df["RPM"] / 60) ** 2) * ((2 * self.R) ** 4))
         # df["Cp"] = df["POWER"] * 1000 / (self.airDensity * ((df["RPM"] / 60) ** 3) * ((2 * self.R) ** 5))
@@ -354,22 +409,49 @@ class SIMULATION:
         else:
             df["eta"] = 0
 
+        # 兜底校验：聚合后量级仍异常（NaN/inf/接近 0 推力）→ 拒收
+        # 注意：优化 #4 后不在此处 closeInstance，QBLADE 实例跨工况复用。
+        if not np.isfinite(df["THRUST"].iloc[0]) or abs(df["THRUST"].iloc[0]) < 1e-6:
+            print(f"[SKIP] 工况 {os.path.splitext(os.path.basename(path))[0]} THRUST 异常（{df['THRUST'].iloc[0]:.3e}），不保存")
+            self.one_simulation_data = pd.DataFrame()
+            return self.one_simulation_data
+
         self.one_simulation_data = df
         filename = os.path.splitext(path)[0]
         label = os.path.splitext(os.path.basename(filename))[0]
         self.all_simulation_data[label] = df
 
-        # Store QBlade project
-        goal_qbr_file_name: str = os.path.splitext(path)[0] + ".qpr"
-        goal_qbr_file_path: str = os.path.join(self.file_path["QBR_file_folder"], goal_qbr_file_name)
-        QBLADE.storeProject(self.str_to_byte(goal_qbr_file_path))
+        # 优化 #3：跳过 storeProject 写 .qpr 项目文件。
+        # 大批量数据生成时（1000 几何 × 42 工况 = 42000 次）每次 store 13MB
+        # 项目文件 ≈ 1min IO，总累计 ~700 小时纯 IO，且训练数据全在 pkl 中，
+        # .qpr 仅 GUI 调试用途，单几何调试时可手动重启 storeProject。
+        # 参考：https://docs.qblade.org/src/user/guigraph/guigraph.html
+        # 若要恢复，取消下面 3 行的注释：
+        # goal_qbr_file_name: str = os.path.splitext(path)[0] + ".qpr"
+        # goal_qbr_file_path: str = os.path.join(self.file_path["QBR_file_folder"], goal_qbr_file_name)
+        # QBLADE.storeProject(self.str_to_byte(goal_qbr_file_path))
 
-        # Unloading the qblade library
-        QBLADE.closeInstance()
+        # 优化 #4：不再 closeInstance/del；QBLADE 实例跨工况复用。
+        # 显式 close 由调用方在 run_all_simulation 收尾或 __del__ 中触发。
         print(f'RPM{RPM}_Wind{WIND_SPEED}_Angle{ANGLE}')
-        del QBLADE
 
         return self.one_simulation_data # one_simulation data detailed for README.md
+
+    def close(self) -> None:
+        """显式释放 QBlade 实例（推荐由调用方在跑完所有工况后调用）。"""
+        if getattr(self, "QBLADE", None) is not None:
+            try:
+                self.QBLADE.closeInstance()
+            except Exception as e:
+                print(f"[warn] closeInstance 异常：{e}")
+            self.QBLADE = None
+
+    def __del__(self) -> None:
+        """析构兜底（避免 worker 异常退出时残留 QBlade 实例）。"""
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
     def run_all_simulation(self) -> None:
@@ -395,6 +477,8 @@ class SIMULATION:
         for sim_file_path in all_sim_files:
             print(os.path.splitext(sim_file_path)[0])
             self.run_one_simulation(SIM_file_path=sim_file_path)
+        # 优化 #4 收尾：跑完所有工况后释放 QBlade 实例
+        self.close()
 
 
     def change_propeller_geometry(
