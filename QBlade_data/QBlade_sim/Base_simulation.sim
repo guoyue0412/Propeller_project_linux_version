@@ -5,7 +5,7 @@ Time : 13:18:59
 Date : 26.07.2025
 
 ----------------------------------------Object Name-----------------------------------------------------------------
-RPM6015_Wind17.748_Angle0                OBJECTNAME         - the name of the simulation object               
+RPM5000_Wind9_Angle85                    OBJECTNAME         - the name of the simulation object               
 
 ----------------------------------------Simulation Type-------------------------------------------------------------
 0                                        ISOFFSHORE         - use a number: 0 = onshore; 1 = offshore
@@ -14,15 +14,15 @@ RPM6015_Wind17.748_Angle0                OBJECTNAME         - the name of the si
 multiple turbines can be added by adding multiple definitions encapsulated with TURB_X and END_TURB_X, where X must start at 1
 
 TURB_1
-    base_Turb/base_Turb.trb              TURBFILE           - the turbine definition file that is used for this simulation
-    base_Turb                            TURBNAME           - the (unique) name of the turbine in the simulation (results will appear under this name)
+    Baseline_Blade_Turb/Baseline_Blade_Turb.trb              TURBFILE           - the turbine definition file that is used for this simulation
+    Baseline_Blade_Turb               TURBNAME           - the (unique) name of the turbine in the simulation (results will appear under this name)
     0.00                                 INITIAL_YAW        - the initial turbine yaw in [deg]
     0.00                                 INITIAL_PITCH      - the initial collective blade pitch in [deg]
     0.00                                 INITIAL_AZIMUTH    - the initial azimuthal rotor angle in [deg]
     1                                    STRSUBSTEP         - the number of structural substeps per timestep (usually 1)
     5                                    RELAXSTEPS         - the number of initial static structural relaxation steps
     1                                    PRESCRIBETYPE      - rotor RPM prescribe type (0 = ramp-up; 1 = whole sim; 2 = no RPM prescibed) 
-    6015                                 RPMPRESCRIBED      - the prescribed rotor RPM [-]                    
+    5000                                 RPMPRESCRIBED      - the prescribed rotor RPM [-]                    
     5                                    STRITERATIONS      - number of iterations for the time integration (used when integrator is HHT or Euler)
     0                                    MODNEWTONITER      - use the modified newton iteration?
     0.00                                 GLOBPOS_X          - the global x-position of the turbine [m]
@@ -51,9 +51,9 @@ END_TURB_1
 0                                        STITCHINGTYPE      - the windfield stitching type; 0 = periodic; 1 = mirror
 1                                        WINDAUTOSHIFT      - the windfield shifting automatically based on rotor diameter; 0 = false; 1 = true
 0.00                                     SHIFTTIME          - the windfield is shifted by this time if WINDAUTOSHIFT = 0
-17.748                                   MEANINF            - the mean inflow velocity, overridden if a windfield or hubheight file is use
+9                                        MEANINF            - the mean inflow velocity, overridden if a windfield or hubheight file is use
 0.00                                     HORANGLE           - the horizontal inflow angle
-0                                        VERTANGLE          - the vertical inflow angle                       
+85                                       VERTANGLE          - the vertical inflow angle                       
 0                                        PROFILETYPE        - the type of wind profile used (0 = Power Law; 1 = Logarithmic)
 0.000                                    SHEAREXP           - the shear exponent if using a power law profile, if a windfield is used these values are used to calculate the mean wake convection velocities
 0.010                                    ROUGHLENGTH        - the roughness length if using a log profile, if a windfield is used these values are used to calculate the mean wake convection velocities
