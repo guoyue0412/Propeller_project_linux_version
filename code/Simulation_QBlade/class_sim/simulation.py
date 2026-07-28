@@ -16,6 +16,15 @@ from tqdm import tqdm
 from typing import Optional,Union,List,Dict # for | Optional
 
 
+def condition_label(rpm: float, wind_speed: float, angle: float) -> str:
+    """Return the canonical key used by manifest-mode dataset generation."""
+    return (
+        f"RPM{repr(float(rpm))}_"
+        f"Wind{repr(float(wind_speed))}_"
+        f"Angle{repr(float(angle))}"
+    )
+
+
 class SIMULATION:
     """
     This is simulation function class based on QBlade.one simulation or batch simulation for certain geometry Blade.
@@ -246,8 +255,9 @@ class SIMULATION:
                 The result of the simulation (includes time, thrust, power, efficiency, etc.).
         """
         if SIM_file_path is None:
+            direct_condition_label = condition_label(RPM, WIND_SPEED, ANGLE)
             paired_tuple: list[tuple[str, str]] = [
-                ("OBJECTNAME", f'RPM{RPM}_Wind{WIND_SPEED}_Angle{ANGLE}'),
+                ("OBJECTNAME", direct_condition_label),
                 ("RPMPRESCRIBED", str(RPM)),
                 ("MEANINF", str(WIND_SPEED)),
                 ("VERTANGLE", str(ANGLE))
@@ -417,8 +427,11 @@ class SIMULATION:
             return self.one_simulation_data
 
         self.one_simulation_data = df
-        filename = os.path.splitext(path)[0]
-        label = os.path.splitext(os.path.basename(filename))[0]
+        if SIM_file_path is None:
+            label = condition_label(RPM, WIND_SPEED, ANGLE)
+        else:
+            filename = os.path.splitext(path)[0]
+            label = os.path.splitext(os.path.basename(filename))[0]
         self.all_simulation_data[label] = df
 
         # 优化 #3：跳过 storeProject 写 .qpr 项目文件。
@@ -599,4 +612,3 @@ class SIMULATION:
         self.all_simulation_data.clear()
         # default : the geometry is baseline
         self.all_simulation_data['geometry'] = self.current_propeller
-
